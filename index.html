@@ -1,1 +1,679 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>10をつくろう（リンゴのカード）</title>
+<style>
+  :root {
+    --bg: #f7f7f7;
+    --panel: #ffffff;
+    --shadow: 0 8px 20px rgba(0,0,0,.10);
+    --radius: 16px;
+    --dark: #111;
+  }
 
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Noto Sans JP", sans-serif;
+    background: var(--bg);
+    color: var(--dark);
+    touch-action: manipulation;
+  }
+
+  /* 1. アプリ全体の幅を細くして縦長にする設定 */
+  .wrap {
+    max-width: 360px; /* ここを大きく絞り、スリムにしました */
+    margin: 0 auto;
+    padding: 8px;
+  }
+
+  .panel {
+    background: var(--panel);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 16px 12px;
+    position: relative;
+  }
+
+  .titleRow {
+    position: relative;
+    min-height: 40px;
+    margin-bottom: 6px;
+  }
+
+  .title {
+    font-weight: 950;
+    font-size: 18px; /* 全体が細くなったのに合わせて少し調整 */
+    margin: 0;
+    text-align: center;
+    line-height: 40px;
+  }
+
+  .soundBtn {
+    position: absolute;
+    right: 0;
+    top: 0;
+    border: 0;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 10px; /* 全体が細くなったのに合わせて少しコンパクトに */
+    font-size: 12px;
+    font-weight: 950;
+    cursor: pointer;
+    background: #f1f1f1;
+    color: var(--dark);
+  }
+
+  .soundBtn.off {
+    background: #e9e9e9;
+    color: #666;
+  }
+
+  .topModes {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .modeBtn {
+    border: 0;
+    border-radius: 12px;
+    padding: 10px 16px;
+    min-width: 100px;
+    font-size: 14px;
+    font-weight: 900;
+    cursor: pointer;
+    background: #ececec;
+    color: var(--dark);
+    transition: transform .12s ease, background .12s ease, color .12s ease;
+  }
+
+  .modeBtn.active {
+    background: var(--dark);
+    color: #fff;
+  }
+
+  /* 中央の出題エリア */
+  .stage {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 16px 0;
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.08);
+    width: 100%;
+    max-width: 300px; /* 中央のカードも全体に合わせて少しスリムに */
+    padding: 20px 16px; 
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .card::after {
+    content: "";
+    position: absolute;
+    inset: 6px;
+    border-radius: 10px;
+    border: 2px solid rgba(0,0,0,.05);
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  .cardInner {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+  }
+
+  .equationArea {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .apple-card {
+    width: 40%;
+    max-width: 90px;
+    aspect-ratio: 3 / 4;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,.1);
+    background: #fff;
+  }
+
+  .operator {
+    font-size: 32px;
+    font-weight: 900;
+    color: #333;
+    margin-top: -4px;
+  }
+
+  .answer-slot {
+    width: 40%;
+    max-width: 90px;
+    aspect-ratio: 3 / 4;
+    border: 3px dashed #ccc;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fafafa;
+    position: relative;
+  }
+
+  .question-mark {
+    font-size: 32px;
+    font-weight: 900;
+    color: #bbb;
+  }
+
+  .answer-card-img {
+    position: absolute;
+    inset: -3px; 
+    width: calc(100% + 6px);
+    height: calc(100% + 6px);
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,.1);
+    background: #fff;
+    opacity: 0;
+    transform: scale(0.9);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+
+  .answer-card-img.show {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  /* メッセージエリア */
+  .messageArea {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: rgba(255,255,255,.95);
+    z-index: 10;
+  }
+
+  .messageArea.show {
+    display: flex;
+  }
+
+  .messageTitle {
+    font-size: clamp(20px, 6vw, 24px);
+    font-weight: 950;
+    line-height: 1.3;
+    margin: 0;
+    white-space: pre-line;
+  }
+
+  .messageSub {
+    margin: 6px 0 0;
+    font-size: 13px;
+    font-weight: 800;
+    color: #555;
+    line-height: 1.5;
+    white-space: pre-line;
+  }
+
+  .resultResetBtn {
+    margin-top: 10px;
+    border: 0;
+    border-radius: 10px;
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: 900;
+    cursor: pointer;
+    background: #efefef;
+    color: var(--dark);
+  }
+
+  .resultResetBtn.hidden { display: none; }
+
+  /* コントロール（スタートボタン） */
+  .controls {
+    display: flex;
+    justify-content: center;
+    margin-top: 10px;
+    margin-bottom: 4px;
+    min-height: 44px;
+  }
+
+  .controls.hidden {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .mainBtn {
+    border: 0;
+    border-radius: 12px;
+    font-weight: 950;
+    cursor: pointer;
+    padding: 12px 24px;
+    font-size: 16px;
+    background: var(--dark);
+    color: #fff;
+    min-width: 160px;
+  }
+  .mainBtn:disabled { opacity: .55; }
+
+  /* 9つのボタンパッド */
+  .pad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin: 16px auto 0;
+    max-width: 260px; /* ここを細く設定することで、ボタンが横に広がりすぎるのを防ぎます */
+  }
+
+  .digitBtn {
+    border: 0;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 4px 10px rgba(0,0,0,.08);
+    cursor: pointer;
+    padding: 4px; 
+    
+    /* 2. ボタンをリンゴ画像と同じ「縦長の長方形(3:4)」にする設定 */
+    aspect-ratio: 3 / 4; 
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform .08s ease, filter .08s ease;
+  }
+
+  .digitBtn:active {
+    transform: scale(0.96);
+    filter: brightness(0.95);
+  }
+
+  .digitBtn:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+  }
+
+  .digitBtn img {
+    /* 3. 画像自体は枠いっぱいに表示されるので、大きさをキープできます */
+    width: 100%;
+    height: 100%;
+    object-fit: contain; 
+    pointer-events: none; 
+  }
+
+  /* アニメーション */
+  @keyframes shake {
+    0%   { transform: translateX(0); }
+    20%  { transform: translateX(-8px); }
+    40%  { transform: translateX(8px); }
+    60%  { transform: translateX(-6px); }
+    80%  { transform: translateX(6px); }
+    100% { transform: translateX(0); }
+  }
+  .shake { animation: shake .22s ease; }
+
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="panel">
+      <div class="titleRow">
+        <p class="title">10をつくろう</p>
+        <button id="soundBtn" class="soundBtn" type="button">
+          <span id="soundIcon">🔊</span>
+          <span id="soundLabel">おと ON</span>
+        </button>
+      </div>
+
+      <div class="topModes">
+        <button id="practiceModeBtn" class="modeBtn active" type="button">れんしゅう</button>
+        <button id="challengeModeBtn" class="modeBtn" type="button">30びょう</button>
+      </div>
+
+      <div class="stage">
+        <div class="card" id="shakeTarget">
+          <div id="cardInner" class="cardInner">
+            <div id="equationArea" class="equationArea">
+              <img id="targetCard" class="apple-card" src="" alt="問題のカード">
+              <span class="operator">+</span>
+              <div class="answer-slot">
+                <span id="questionMark" class="question-mark">?</span>
+                <img id="answerCard" class="answer-card-img" src="" alt="こたえのカード">
+              </div>
+            </div>
+
+            <div id="messageArea" class="messageArea">
+              <div>
+                <p id="messageTitle" class="messageTitle">30びょう</p>
+                <p id="messageSub" class="messageSub">スタートで はじめるよ</p>
+                <button id="resultResetBtn" class="resultResetBtn hidden" type="button">ベストきろくを リセット</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="controls" class="controls hidden">
+        <button id="mainBtn" class="mainBtn" type="button">スタート</button>
+      </div>
+
+      <div class="pad" id="pad">
+        </div>
+    </div>
+  </div>
+
+<script>
+  const IMG_BASE_URL = "https://pokopy-talkpapa.github.io/tashizan-apple/";
+  
+  function getImgSrc(num) {
+    return IMG_BASE_URL + String(num).padStart(2, "0") + ".png";
+  }
+
+  const padContainer = document.getElementById("pad");
+  const digitButtons = [];
+  for (let i = 1; i <= 9; i++) {
+    const btn = document.createElement("button");
+    btn.className = "digitBtn";
+    btn.type = "button";
+    btn.dataset.digit = i;
+    
+    const img = document.createElement("img");
+    img.src = getImgSrc(i);
+    img.alt = i + "のリンゴ";
+    
+    btn.appendChild(img);
+    padContainer.appendChild(btn);
+    digitButtons.push(btn);
+  }
+
+  const STORAGE_SOUND_KEY = "appleMake10SoundOn";
+  const STORAGE_BEST_KEY = "appleMake10Best30";
+
+  const state = {
+    mode: "practice",
+    currentTarget: null,
+    currentAnswer: null,
+    practiceLocked: false,
+    challengeRunning: false,
+    challengeBusy: false,
+    score: 0,
+    misses: 0,
+    best: Number(localStorage.getItem(STORAGE_BEST_KEY) || 0),
+    soundOn: localStorage.getItem(STORAGE_SOUND_KEY) !== "off",
+    timerId: null,
+    nextId: null,
+    endAt: 0,
+    showResetButton: false
+  };
+
+  const soundBtn = document.getElementById("soundBtn");
+  const practiceModeBtn = document.getElementById("practiceModeBtn");
+  const challengeModeBtn = document.getElementById("challengeModeBtn");
+  const controls = document.getElementById("controls");
+  const mainBtn = document.getElementById("mainBtn");
+  const resultResetBtn = document.getElementById("resultResetBtn");
+  
+  const shakeTarget = document.getElementById("shakeTarget");
+  const equationArea = document.getElementById("equationArea");
+  const messageArea = document.getElementById("messageArea");
+  const messageTitle = document.getElementById("messageTitle");
+  const messageSub = document.getElementById("messageSub");
+  
+  const targetCard = document.getElementById("targetCard");
+  const answerCard = document.getElementById("answerCard");
+  const questionMark = document.getElementById("questionMark");
+
+  let audioCtx = null;
+  function getAudioCtx() {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return null;
+    if (!audioCtx) audioCtx = new AudioContextClass();
+    if (audioCtx.state === "suspended") audioCtx.resume();
+    return audioCtx;
+  }
+
+  function beep({ freq = 880, duration = 0.08, type = "sine", gain = 0.03, when = 0 }) {
+    if (!state.soundOn) return;
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    const now = ctx.currentTime + when;
+    const osc = ctx.createOscillator();
+    const amp = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, now);
+    amp.gain.setValueAtTime(0.0001, now);
+    amp.gain.exponentialRampToValueAtTime(gain, now + 0.01);
+    amp.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+    osc.connect(amp);
+    amp.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + duration + 0.02);
+  }
+
+  function playCorrectSound() {
+    beep({ freq: 880, duration: 0.08, type: "sine", gain: 0.035, when: 0 });
+    beep({ freq: 1320, duration: 0.1, type: "sine", gain: 0.03, when: 0.08 });
+  }
+
+  function playWrongSound() {
+    beep({ freq: 180, duration: 0.12, type: "triangle", gain: 0.03, when: 0 });
+  }
+
+  function updateSoundButton() {
+    soundBtn.classList.toggle("off", !state.soundOn);
+    document.getElementById("soundIcon").textContent = state.soundOn ? "🔊" : "🔇";
+    document.getElementById("soundLabel").textContent = state.soundOn ? "おと ON" : "おと OFF";
+  }
+
+  function setPadDisabled(disabled) {
+    digitButtons.forEach(btn => btn.disabled = disabled);
+  }
+
+  function showMessage(title, sub = "") {
+    equationArea.style.visibility = "hidden";
+    messageArea.classList.add("show");
+    messageTitle.textContent = title;
+    messageSub.textContent = sub;
+    resultResetBtn.classList.toggle("hidden", !state.showResetButton);
+  }
+
+  function showEquation() {
+    equationArea.style.visibility = "visible";
+    messageArea.classList.remove("show");
+  }
+
+  function shakeCard() {
+    shakeTarget.classList.remove("shake");
+    void shakeTarget.offsetWidth;
+    shakeTarget.classList.add("shake");
+  }
+
+  function pickProblem() {
+    const target = Math.floor(Math.random() * 9) + 1;
+    const answer = 10 - target;
+    return { target, answer };
+  }
+
+  function setProblem(problem) {
+    state.currentTarget = problem.target;
+    state.currentAnswer = problem.answer;
+    targetCard.src = getImgSrc(problem.target);
+    answerCard.classList.remove("show");
+    questionMark.style.display = "block";
+    showEquation();
+  }
+
+  function handleAnswer(selectedValue) {
+    if (state.mode === "practice" && state.practiceLocked) return;
+    if (state.mode === "challenge" && (!state.challengeRunning || state.challengeBusy)) return;
+
+    if (state.mode === "practice") {
+      state.practiceLocked = true;
+      setPadDisabled(true);
+    } else {
+      state.challengeBusy = true;
+      setPadDisabled(true);
+    }
+
+    if (selectedValue === state.currentAnswer) {
+      if (state.mode === "challenge") state.score++;
+      answerCard.src = getImgSrc(selectedValue);
+      answerCard.classList.add("show");
+      questionMark.style.display = "none";
+      
+      playCorrectSound();
+      
+      const delay = state.mode === "practice" ? 400 : 250;
+      setTimeout(() => {
+        if (state.mode === "challenge" && !state.challengeRunning) return;
+        state.practiceLocked = false;
+        state.challengeBusy = false;
+        setPadDisabled(false);
+        setProblem(pickProblem());
+      }, delay);
+
+    } else {
+      if (state.mode === "challenge") state.misses++;
+      shakeCard();
+      playWrongSound();
+      setTimeout(() => {
+        if (state.mode === "challenge" && !state.challengeRunning) return;
+        state.practiceLocked = false;
+        state.challengeBusy = false;
+        setPadDisabled(false);
+      }, 250);
+    }
+  }
+
+  function resetPractice() {
+    state.challengeRunning = false;
+    state.practiceLocked = false;
+    controls.classList.add("hidden");
+    setPadDisabled(false);
+    setProblem(pickProblem());
+  }
+
+  function resetChallengeReady() {
+    state.challengeRunning = false;
+    state.score = 0;
+    state.misses = 0;
+    state.showResetButton = false;
+    controls.classList.remove("hidden");
+    mainBtn.disabled = false;
+    mainBtn.textContent = "スタート";
+    setPadDisabled(true);
+    showMessage("30びょう", "スタートで はじめるよ");
+  }
+
+  function setMode(mode) {
+    clearTimeout(state.nextId);
+    clearInterval(state.timerId);
+    state.mode = mode;
+    practiceModeBtn.classList.toggle("active", mode === "practice");
+    challengeModeBtn.classList.toggle("active", mode === "challenge");
+
+    if (mode === "practice") {
+      resetPractice();
+    } else {
+      resetChallengeReady();
+    }
+  }
+
+  function endChallenge() {
+    clearInterval(state.timerId);
+    state.challengeRunning = false;
+    setPadDisabled(true);
+
+    const isNewBest = state.score > state.best;
+    if (isNewBest) {
+      state.best = state.score;
+      localStorage.setItem(STORAGE_BEST_KEY, String(state.best));
+    }
+
+    const subText = isNewBest
+      ? `ミス ${state.misses}かい\nベスト こうしん！`
+      : `ミス ${state.misses}かい\nベスト ${state.best}もん`;
+
+    state.showResetButton = true;
+    showMessage(`${state.score}もん\nできた！`, subText);
+    mainBtn.disabled = false;
+    mainBtn.textContent = "もういちど";
+  }
+
+  function startChallenge() {
+    state.challengeRunning = true;
+    state.challengeBusy = false;
+    state.score = 0;
+    state.misses = 0;
+    state.showResetButton = false;
+    mainBtn.disabled = true;
+    mainBtn.textContent = "ちょうせん中";
+    setPadDisabled(false);
+    setProblem(pickProblem());
+    
+    const endAt = Date.now() + 30000;
+    state.timerId = setInterval(() => {
+      if (Date.now() >= endAt) endChallenge();
+    }, 100);
+  }
+
+  digitButtons.forEach(btn => {
+    btn.addEventListener("click", () => handleAnswer(Number(btn.dataset.digit)));
+  });
+
+  mainBtn.addEventListener("click", () => {
+    if (state.mode === "challenge" && !state.challengeRunning) startChallenge();
+  });
+
+  practiceModeBtn.addEventListener("click", () => {
+    if (state.mode !== "practice") setMode("practice");
+  });
+
+  challengeModeBtn.addEventListener("click", () => {
+    if (state.mode !== "challenge") setMode("challenge");
+  });
+
+  soundBtn.addEventListener("click", () => {
+    state.soundOn = !state.soundOn;
+    localStorage.setItem(STORAGE_SOUND_KEY, state.soundOn ? "on" : "off");
+    updateSoundButton();
+  });
+
+  resultResetBtn.addEventListener("click", () => {
+    state.best = 0;
+    localStorage.removeItem(STORAGE_BEST_KEY);
+    state.showResetButton = false;
+    showMessage(`${state.score}もん\nできた！`, `ミス ${state.misses}かい\nベストきろくを リセットしたよ`);
+  });
+
+  window.addEventListener('load', () => {
+    for (let i = 1; i <= 10; i++) {
+      const img = new Image();
+      img.src = getImgSrc(i);
+    }
+  });
+
+  updateSoundButton();
+  setMode("practice");
+</script>
+</body>
+</html>
