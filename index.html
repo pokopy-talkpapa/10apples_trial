@@ -23,9 +23,8 @@
     touch-action: manipulation;
   }
 
-  /* 1. アプリ全体の幅を細くして縦長にする設定 */
   .wrap {
-    max-width: 360px; /* ここを大きく絞り、スリムにしました */
+    max-width: 360px;
     margin: 0 auto;
     padding: 8px;
   }
@@ -46,7 +45,7 @@
 
   .title {
     font-weight: 950;
-    font-size: 18px; /* 全体が細くなったのに合わせて少し調整 */
+    font-size: 18px;
     margin: 0;
     text-align: center;
     line-height: 40px;
@@ -61,7 +60,7 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    padding: 6px 10px; /* 全体が細くなったのに合わせて少しコンパクトに */
+    padding: 6px 10px;
     font-size: 12px;
     font-weight: 950;
     cursor: pointer;
@@ -82,16 +81,18 @@
   }
 
   .modeBtn {
+    flex: 1;
+    min-width: 0;
     border: 0;
     border-radius: 12px;
-    padding: 10px 16px;
-    min-width: 100px;
-    font-size: 14px;
+    padding: 10px 8px;
+    font-size: 12px;
     font-weight: 900;
     cursor: pointer;
     background: #ececec;
     color: var(--dark);
     transition: transform .12s ease, background .12s ease, color .12s ease;
+    white-space: nowrap;
   }
 
   .modeBtn.active {
@@ -99,7 +100,6 @@
     color: #fff;
   }
 
-  /* 中央の出題エリア */
   .stage {
     display: flex;
     justify-content: center;
@@ -112,8 +112,8 @@
     border-radius: 14px;
     box-shadow: 0 4px 12px rgba(0,0,0,.08);
     width: 100%;
-    max-width: 300px; /* 中央のカードも全体に合わせて少しスリムに */
-    padding: 20px 16px; 
+    max-width: 300px;
+    padding: 20px 16px;
     position: relative;
     overflow: hidden;
     display: flex;
@@ -185,7 +185,7 @@
 
   .answer-card-img {
     position: absolute;
-    inset: -3px; 
+    inset: -3px;
     width: calc(100% + 6px);
     height: calc(100% + 6px);
     object-fit: contain;
@@ -202,7 +202,6 @@
     transform: scale(1);
   }
 
-  /* メッセージエリア */
   .messageArea {
     position: absolute;
     inset: 0;
@@ -249,7 +248,6 @@
 
   .resultResetBtn.hidden { display: none; }
 
-  /* コントロール（スタートボタン） */
   .controls {
     display: flex;
     justify-content: center;
@@ -274,15 +272,15 @@
     color: #fff;
     min-width: 160px;
   }
+
   .mainBtn:disabled { opacity: .55; }
 
-  /* 9つのボタンパッド */
   .pad {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 10px;
     margin: 16px auto 0;
-    max-width: 260px; /* ここを細く設定することで、ボタンが横に広がりすぎるのを防ぎます */
+    max-width: 260px;
   }
 
   .digitBtn {
@@ -291,11 +289,8 @@
     background: #fff;
     box-shadow: 0 4px 10px rgba(0,0,0,.08);
     cursor: pointer;
-    padding: 4px; 
-    
-    /* 2. ボタンをリンゴ画像と同じ「縦長の長方形(3:4)」にする設定 */
-    aspect-ratio: 3 / 4; 
-    
+    padding: 4px;
+    aspect-ratio: 3 / 4;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -313,14 +308,12 @@
   }
 
   .digitBtn img {
-    /* 3. 画像自体は枠いっぱいに表示されるので、大きさをキープできます */
     width: 100%;
     height: 100%;
-    object-fit: contain; 
-    pointer-events: none; 
+    object-fit: contain;
+    pointer-events: none;
   }
 
-  /* アニメーション */
   @keyframes shake {
     0%   { transform: translateX(0); }
     20%  { transform: translateX(-8px); }
@@ -329,8 +322,8 @@
     80%  { transform: translateX(6px); }
     100% { transform: translateX(0); }
   }
-  .shake { animation: shake .22s ease; }
 
+  .shake { animation: shake .22s ease; }
 </style>
 </head>
 <body>
@@ -347,6 +340,7 @@
       <div class="topModes">
         <button id="practiceModeBtn" class="modeBtn active" type="button">れんしゅう</button>
         <button id="challengeModeBtn" class="modeBtn" type="button">30びょう</button>
+        <button id="noMissModeBtn" class="modeBtn" type="button">ノーミスモード</button>
       </div>
 
       <div class="stage">
@@ -376,14 +370,13 @@
         <button id="mainBtn" class="mainBtn" type="button">スタート</button>
       </div>
 
-      <div class="pad" id="pad">
-        </div>
+      <div class="pad" id="pad"></div>
     </div>
   </div>
 
 <script>
   const IMG_BASE_URL = "https://pokopy-talkpapa.github.io/tashizan-apple/";
-  
+
   function getImgSrc(num) {
     return IMG_BASE_URL + String(num).padStart(2, "0") + ".png";
   }
@@ -395,54 +388,58 @@
     btn.className = "digitBtn";
     btn.type = "button";
     btn.dataset.digit = i;
-    
+
     const img = document.createElement("img");
     img.src = getImgSrc(i);
     img.alt = i + "のリンゴ";
-    
+
     btn.appendChild(img);
     padContainer.appendChild(btn);
     digitButtons.push(btn);
   }
 
   const STORAGE_SOUND_KEY = "appleMake10SoundOn";
-  const STORAGE_BEST_KEY = "appleMake10Best30";
+  const STORAGE_BEST_30_KEY = "appleMake10Best30";
+  const STORAGE_BEST_NOMISS_KEY = "appleMake10BestNoMiss";
 
   const state = {
     mode: "practice",
     currentTarget: null,
     currentAnswer: null,
     practiceLocked: false,
-    challengeRunning: false,
-    challengeBusy: false,
+    gameRunning: false,
+    gameBusy: false,
     score: 0,
     misses: 0,
-    best: Number(localStorage.getItem(STORAGE_BEST_KEY) || 0),
+    best30: Number(localStorage.getItem(STORAGE_BEST_30_KEY) || 0),
+    bestNoMiss: Number(localStorage.getItem(STORAGE_BEST_NOMISS_KEY) || 0),
     soundOn: localStorage.getItem(STORAGE_SOUND_KEY) !== "off",
     timerId: null,
     nextId: null,
-    endAt: 0,
-    showResetButton: false
+    showResetButton: false,
+    lastResult: null
   };
 
   const soundBtn = document.getElementById("soundBtn");
   const practiceModeBtn = document.getElementById("practiceModeBtn");
   const challengeModeBtn = document.getElementById("challengeModeBtn");
+  const noMissModeBtn = document.getElementById("noMissModeBtn");
   const controls = document.getElementById("controls");
   const mainBtn = document.getElementById("mainBtn");
   const resultResetBtn = document.getElementById("resultResetBtn");
-  
+
   const shakeTarget = document.getElementById("shakeTarget");
   const equationArea = document.getElementById("equationArea");
   const messageArea = document.getElementById("messageArea");
   const messageTitle = document.getElementById("messageTitle");
   const messageSub = document.getElementById("messageSub");
-  
+
   const targetCard = document.getElementById("targetCard");
   const answerCard = document.getElementById("answerCard");
   const questionMark = document.getElementById("questionMark");
 
   let audioCtx = null;
+
   function getAudioCtx() {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     if (!AudioContextClass) return null;
@@ -485,7 +482,9 @@
   }
 
   function setPadDisabled(disabled) {
-    digitButtons.forEach(btn => btn.disabled = disabled);
+    digitButtons.forEach(btn => {
+      btn.disabled = disabled;
+    });
   }
 
   function showMessage(title, sub = "") {
@@ -518,130 +517,288 @@
     state.currentAnswer = problem.answer;
     targetCard.src = getImgSrc(problem.target);
     answerCard.classList.remove("show");
+    answerCard.src = "";
     questionMark.style.display = "block";
     showEquation();
   }
 
-  function handleAnswer(selectedValue) {
-    if (state.mode === "practice" && state.practiceLocked) return;
-    if (state.mode === "challenge" && (!state.challengeRunning || state.challengeBusy)) return;
+  function clearGameTimers() {
+    clearTimeout(state.nextId);
+    clearInterval(state.timerId);
+    state.nextId = null;
+    state.timerId = null;
+  }
 
-    if (state.mode === "practice") {
-      state.practiceLocked = true;
-      setPadDisabled(true);
-    } else {
-      state.challengeBusy = true;
-      setPadDisabled(true);
-    }
+  function getCurrentBest() {
+    if (state.mode === "challenge") return state.best30;
+    if (state.mode === "nomiss") return state.bestNoMiss;
+    return 0;
+  }
 
-    if (selectedValue === state.currentAnswer) {
-      if (state.mode === "challenge") state.score++;
-      answerCard.src = getImgSrc(selectedValue);
-      answerCard.classList.add("show");
-      questionMark.style.display = "none";
-      
-      playCorrectSound();
-      
-      const delay = state.mode === "practice" ? 400 : 250;
-      setTimeout(() => {
-        if (state.mode === "challenge" && !state.challengeRunning) return;
-        state.practiceLocked = false;
-        state.challengeBusy = false;
-        setPadDisabled(false);
-        setProblem(pickProblem());
-      }, delay);
-
-    } else {
-      if (state.mode === "challenge") state.misses++;
-      shakeCard();
-      playWrongSound();
-      setTimeout(() => {
-        if (state.mode === "challenge" && !state.challengeRunning) return;
-        state.practiceLocked = false;
-        state.challengeBusy = false;
-        setPadDisabled(false);
-      }, 250);
+  function setCurrentBest(value) {
+    if (state.mode === "challenge") {
+      state.best30 = value;
+      localStorage.setItem(STORAGE_BEST_30_KEY, String(value));
+    } else if (state.mode === "nomiss") {
+      state.bestNoMiss = value;
+      localStorage.setItem(STORAGE_BEST_NOMISS_KEY, String(value));
     }
   }
 
+  function clearCurrentBest() {
+    if (state.mode === "challenge") {
+      state.best30 = 0;
+      localStorage.removeItem(STORAGE_BEST_30_KEY);
+    } else if (state.mode === "nomiss") {
+      state.bestNoMiss = 0;
+      localStorage.removeItem(STORAGE_BEST_NOMISS_KEY);
+    }
+  }
+
+  function buildReadyMessage() {
+    if (state.mode === "challenge") {
+      return {
+        title: "30びょう",
+        sub: "スタートで はじめるよ"
+      };
+    }
+
+    if (state.mode === "nomiss") {
+      return {
+        title: "ノーミス\nモード",
+        sub: "ミスしたら おわり"
+      };
+    }
+
+    return {
+      title: "",
+      sub: ""
+    };
+  }
+
+  function buildResultMessage(result, isReset = false) {
+    const title = `${result.score}もん\nできた！`;
+
+    if (state.mode === "challenge") {
+      if (isReset) {
+        return {
+          title,
+          sub: `ミス ${result.misses}かい\nベストきろくを リセットしたよ`
+        };
+      }
+
+      if (result.isNewBest) {
+        return {
+          title,
+          sub: `ミス ${result.misses}かい\nベスト こうしん！`
+        };
+      }
+
+      return {
+        title,
+        sub: `ミス ${result.misses}かい\nベスト ${getCurrentBest()}もん`
+      };
+    }
+
+    if (state.mode === "nomiss") {
+      if (isReset) {
+        return {
+          title,
+          sub: `ミスで しゅうりょう\nベストきろくを リセットしたよ`
+        };
+      }
+
+      if (result.isNewBest) {
+        return {
+          title,
+          sub: `ミスで しゅうりょう\nベスト こうしん！`
+        };
+      }
+
+      return {
+        title,
+        sub: `ミスで しゅうりょう\nベスト ${getCurrentBest()}もん`
+      };
+    }
+
+    return {
+      title,
+      sub: ""
+    };
+  }
+
   function resetPractice() {
-    state.challengeRunning = false;
+    clearGameTimers();
+    state.gameRunning = false;
+    state.gameBusy = false;
     state.practiceLocked = false;
+    state.showResetButton = false;
+    state.lastResult = null;
     controls.classList.add("hidden");
     setPadDisabled(false);
     setProblem(pickProblem());
   }
 
-  function resetChallengeReady() {
-    state.challengeRunning = false;
+  function resetGameReady() {
+    clearGameTimers();
+    state.gameRunning = false;
+    state.gameBusy = false;
+    state.practiceLocked = false;
     state.score = 0;
     state.misses = 0;
     state.showResetButton = false;
+    state.lastResult = null;
     controls.classList.remove("hidden");
     mainBtn.disabled = false;
     mainBtn.textContent = "スタート";
     setPadDisabled(true);
-    showMessage("30びょう", "スタートで はじめるよ");
+
+    const ready = buildReadyMessage();
+    showMessage(ready.title, ready.sub);
   }
 
   function setMode(mode) {
-    clearTimeout(state.nextId);
-    clearInterval(state.timerId);
+    clearGameTimers();
     state.mode = mode;
+
     practiceModeBtn.classList.toggle("active", mode === "practice");
     challengeModeBtn.classList.toggle("active", mode === "challenge");
+    noMissModeBtn.classList.toggle("active", mode === "nomiss");
 
     if (mode === "practice") {
       resetPractice();
     } else {
-      resetChallengeReady();
+      resetGameReady();
     }
   }
 
-  function endChallenge() {
-    clearInterval(state.timerId);
-    state.challengeRunning = false;
+  function endGame() {
+    clearGameTimers();
+    state.gameRunning = false;
+    state.gameBusy = false;
     setPadDisabled(true);
 
-    const isNewBest = state.score > state.best;
+    const previousBest = getCurrentBest();
+    const isNewBest = state.score > previousBest;
+
     if (isNewBest) {
-      state.best = state.score;
-      localStorage.setItem(STORAGE_BEST_KEY, String(state.best));
+      setCurrentBest(state.score);
     }
 
-    const subText = isNewBest
-      ? `ミス ${state.misses}かい\nベスト こうしん！`
-      : `ミス ${state.misses}かい\nベスト ${state.best}もん`;
+    state.lastResult = {
+      mode: state.mode,
+      score: state.score,
+      misses: state.misses,
+      isNewBest
+    };
 
     state.showResetButton = true;
-    showMessage(`${state.score}もん\nできた！`, subText);
+
+    const resultMessage = buildResultMessage(state.lastResult);
+    showMessage(resultMessage.title, resultMessage.sub);
+
     mainBtn.disabled = false;
     mainBtn.textContent = "もういちど";
   }
 
-  function startChallenge() {
-    state.challengeRunning = true;
-    state.challengeBusy = false;
+  function startGame() {
+    state.gameRunning = true;
+    state.gameBusy = false;
+    state.practiceLocked = false;
     state.score = 0;
     state.misses = 0;
     state.showResetButton = false;
+    state.lastResult = null;
+
     mainBtn.disabled = true;
     mainBtn.textContent = "ちょうせん中";
     setPadDisabled(false);
     setProblem(pickProblem());
-    
-    const endAt = Date.now() + 30000;
-    state.timerId = setInterval(() => {
-      if (Date.now() >= endAt) endChallenge();
-    }, 100);
+
+    if (state.mode === "challenge") {
+      const endAt = Date.now() + 30000;
+      state.timerId = setInterval(() => {
+        if (Date.now() >= endAt) {
+          endGame();
+        }
+      }, 100);
+    }
+  }
+
+  function handleAnswer(selectedValue) {
+    if (state.mode === "practice" && state.practiceLocked) return;
+    if (state.mode !== "practice" && (!state.gameRunning || state.gameBusy)) return;
+
+    if (state.mode === "practice") {
+      state.practiceLocked = true;
+      setPadDisabled(true);
+    } else {
+      state.gameBusy = true;
+      setPadDisabled(true);
+    }
+
+    if (selectedValue === state.currentAnswer) {
+      if (state.mode !== "practice") {
+        state.score++;
+      }
+
+      answerCard.src = getImgSrc(selectedValue);
+      answerCard.classList.add("show");
+      questionMark.style.display = "none";
+      playCorrectSound();
+
+      const delay = state.mode === "practice" ? 400 : 250;
+      state.nextId = setTimeout(() => {
+        if (state.mode === "practice") {
+          state.practiceLocked = false;
+        } else {
+          if (!state.gameRunning) return;
+          state.gameBusy = false;
+        }
+
+        setPadDisabled(false);
+        setProblem(pickProblem());
+      }, delay);
+
+      return;
+    }
+
+    shakeCard();
+    playWrongSound();
+
+    if (state.mode === "challenge") {
+      state.misses++;
+      state.nextId = setTimeout(() => {
+        if (!state.gameRunning) return;
+        state.gameBusy = false;
+        setPadDisabled(false);
+      }, 250);
+      return;
+    }
+
+    if (state.mode === "nomiss") {
+      state.nextId = setTimeout(() => {
+        endGame();
+      }, 250);
+      return;
+    }
+
+    state.nextId = setTimeout(() => {
+      state.practiceLocked = false;
+      setPadDisabled(false);
+    }, 250);
   }
 
   digitButtons.forEach(btn => {
-    btn.addEventListener("click", () => handleAnswer(Number(btn.dataset.digit)));
+    btn.addEventListener("click", () => {
+      handleAnswer(Number(btn.dataset.digit));
+    });
   });
 
   mainBtn.addEventListener("click", () => {
-    if (state.mode === "challenge" && !state.challengeRunning) startChallenge();
+    if (state.mode !== "practice" && !state.gameRunning) {
+      startGame();
+    }
   });
 
   practiceModeBtn.addEventListener("click", () => {
@@ -652,6 +809,10 @@
     if (state.mode !== "challenge") setMode("challenge");
   });
 
+  noMissModeBtn.addEventListener("click", () => {
+    if (state.mode !== "nomiss") setMode("nomiss");
+  });
+
   soundBtn.addEventListener("click", () => {
     state.soundOn = !state.soundOn;
     localStorage.setItem(STORAGE_SOUND_KEY, state.soundOn ? "on" : "off");
@@ -659,13 +820,16 @@
   });
 
   resultResetBtn.addEventListener("click", () => {
-    state.best = 0;
-    localStorage.removeItem(STORAGE_BEST_KEY);
+    clearCurrentBest();
     state.showResetButton = false;
-    showMessage(`${state.score}もん\nできた！`, `ミス ${state.misses}かい\nベストきろくを リセットしたよ`);
+
+    if (!state.lastResult) return;
+
+    const resultMessage = buildResultMessage(state.lastResult, true);
+    showMessage(resultMessage.title, resultMessage.sub);
   });
 
-  window.addEventListener('load', () => {
+  window.addEventListener("load", () => {
     for (let i = 1; i <= 10; i++) {
       const img = new Image();
       img.src = getImgSrc(i);
